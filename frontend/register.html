@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register · Foodie</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="js/foodie-common.js"></script>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-panel form-side">
+      <div class="auth-card">
+        <div class="brand"><span class="emoji">🍔</span> Foodie</div>
+        <h1>Create Account</h1>
+        <p class="sub">Join us and get personalized food recommendations</p>
+
+        <div id="formMsg" class="form-msg"></div>
+
+        <form id="registerForm">
+          <div class="field">
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" placeholder="Enter your full name" required>
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Enter your email" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" minlength="6" required>
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" placeholder="Confirm your password" minlength="6" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Register</button>
+        </form>
+
+        <div class="auth-switch">
+          Already have an account? <a class="helper-link" href="login.html">Login</a>
+        </div>
+      </div>
+    </div>
+    <div class="auth-panel art-side">
+      <div style="width:340px; height:340px; border-radius:50%; border:8px solid rgba(255,255,255,.15); background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; font-size:110px;">🥗</div>
+      <div class="tagline">Discover. Select. Enjoy.</div>
+    </div>
+  </div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('formMsg');
+  msg.style.display = 'none';
+
+  const full_name = document.getElementById('fullName').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const confirm_password = document.getElementById('confirmPassword').value;
+
+  if (password !== confirm_password) {
+    msg.textContent = 'Passwords do not match.';
+    msg.className = 'form-msg error';
+    msg.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/users/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name, email, password, confirm_password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.textContent = data.detail || 'Registration failed.';
+      msg.className = 'form-msg error';
+      msg.style.display = 'block';
+      return;
+    }
+
+    localStorage.setItem('foodie_token', data.access_token);
+    localStorage.setItem('foodie_user', JSON.stringify(data.user));
+    window.location.href = 'favorites.html?onboarding=1';
+  } catch (err) {
+    msg.textContent = 'Could not reach the server. Is the backend running?';
+    msg.className = 'form-msg error';
+    msg.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>

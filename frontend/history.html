@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History · Foodie</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="js/foodie-common.js"></script>
+</head>
+<body class="page-shell">
+
+  <nav class="navbar">
+    <div class="brand"><span class="emoji">🍔</span> Foodie</div>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="favorites.html">Favorites</a>
+      <a href="history.html" class="active">History</a>
+      <a href="profile.html">Profile</a>
+    </div>
+    <div class="nav-avatar" id="avatarInitial">U</div>
+  </nav>
+
+  <div class="page-body">
+    <div class="container" style="max-width: 720px;">
+      <h1 class="page-title">Recommendation History</h1>
+      <p class="page-sub">Your previously viewed recommendations</p>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+
+<script>
+const token = localStorage.getItem('foodie_token');
+if (!token) window.location.href = 'login.html';
+
+const user = JSON.parse(localStorage.getItem('foodie_user') || '{}');
+if (user.full_name) document.getElementById('avatarInitial').textContent = user.full_name.charAt(0).toUpperCase();
+
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function historyRowHtml(item) {
+  const food = item.food;
+  return `
+    <a class="history-row" href="${relatedUrl(food)}">
+      ${foodThumbHtml(food)}
+      <div class="info">
+        <div class="name">${food.name}</div>
+        <div class="meta">Viewed on ${formatDate(item.viewed_at)}</div>
+      </div>
+      <span class="chev">›</span>
+    </a>`;
+}
+
+async function loadHistory() {
+  const list = document.getElementById('historyList');
+  const res = await fetch(`${API_BASE}/api/users/history`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+  const items = await res.json();
+
+  list.innerHTML = items.length
+    ? items.map(historyRowHtml).join('')
+    : `<div class="empty-state"><h3>No history yet</h3><p>Foods you view will show up here.</p></div>`;
+}
+
+loadHistory();
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard · Foodie</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="js/foodie-common.js"></script>
+</head>
+<body>
+
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="brand"><span class="emoji">🍔</span> Foodie</div>
+      <nav>
+        <a href="admin.html" class="active">📊 Dashboard</a>
+        <a href="#" id="usersTabLink">👥 Users</a>
+        <a href="#" id="recipesTabLink">🍽️ Recipes</a>
+        <a href="#">⚙️ Preferences</a>
+        <a href="#">📈 Analytics</a>
+        <a href="login.html" id="logoutLink">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      <h1 class="page-title" style="margin-bottom:20px;">Dashboard Overview</h1>
+
+      <div id="accessMsg" class="form-msg error" style="display:none;"></div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Total Users</div>
+          <div class="value" id="statUsers">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Recipes</div>
+          <div class="value" id="statRecipes">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Favorites</div>
+          <div class="value" id="statFavorites">—</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:24px;">
+        <div class="label" style="font-size:12.5px;color:var(--muted);margin-bottom:4px;">Today's Recommendations</div>
+        <div class="value" style="font-family:'Fraunces',serif;font-size:28px;color:var(--forest-900);font-weight:700;" id="statToday">—</div>
+      </div>
+
+      <div class="panel" id="popularPanel">
+        <div class="section-header" style="margin-top:0;">
+          <h2 style="font-size:18px;">Popular Recipes</h2>
+        </div>
+        <div class="food-grid" id="popularGrid"></div>
+      </div>
+
+      <!-- Users table (hidden until sidebar link clicked) -->
+      <div class="panel" id="usersPanel" style="display:none; margin-top:24px;">
+        <div class="section-header" style="margin-top:0;"><h2 style="font-size:18px;">Users</h2></div>
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <thead>
+            <tr style="text-align:left; color:var(--muted); border-bottom:1px solid var(--sage-200);">
+              <th style="padding:8px 6px;">Name</th>
+              <th style="padding:8px 6px;">Email</th>
+              <th style="padding:8px 6px;">Role</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Recipes table (hidden until sidebar link clicked) -->
+      <div class="panel" id="recipesPanel" style="display:none; margin-top:24px;">
+        <div class="section-header" style="margin-top:0;"><h2 style="font-size:18px;">Recipes</h2></div>
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <thead>
+            <tr style="text-align:left; color:var(--muted); border-bottom:1px solid var(--sage-200);">
+              <th style="padding:8px 6px;">Name</th>
+              <th style="padding:8px 6px;">Category</th>
+              <th style="padding:8px 6px;">Tags</th>
+            </tr>
+          </thead>
+          <tbody id="recipesTableBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+<script>
+const token = localStorage.getItem('foodie_token');
+if (!token) window.location.href = 'login.html';
+
+function foodCardHtml(food) {
+  return `
+    <div class="food-card">
+      ${foodThumbHtml(food, "thumb")}
+      <div class="body">
+        <div class="name">${food.name}</div>
+        <div class="tag">${food.category}</div>
+      </div>
+    </div>`;
+}
+
+async function loadStats() {
+  const res = await fetch(`${API_BASE}/api/admin/stats`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+
+  if (res.status === 403) {
+    document.getElementById('accessMsg').textContent = 'Admin access required. This account is not an admin.';
+    document.getElementById('accessMsg').style.display = 'block';
+    document.querySelector('.stat-grid').style.display = 'none';
+    document.getElementById('popularPanel').style.display = 'none';
+    document.querySelector('.panel[style]').style.display = 'none';
+    return;
+  }
+
+  const data = await res.json();
+  document.getElementById('statUsers').textContent = data.total_users;
+  document.getElementById('statRecipes').textContent = data.total_recipes;
+  document.getElementById('statFavorites').textContent = data.total_favorites;
+  document.getElementById('statToday').textContent = data.todays_recommendations;
+
+  const grid = document.getElementById('popularGrid');
+  grid.innerHTML = data.popular_recipes.length
+    ? data.popular_recipes.map(foodCardHtml).join('')
+    : `<div class="empty-state"><h3>No favorites yet</h3><p>Popular recipes will appear once users start favoriting foods.</p></div>`;
+}
+
+async function loadUsers() {
+  const res = await fetch(`${API_BASE}/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return;
+  const users = await res.json();
+  document.getElementById('usersTableBody').innerHTML = users.map(u => `
+    <tr style="border-bottom:1px solid var(--sage-200);">
+      <td style="padding:10px 6px;">${u.full_name}</td>
+      <td style="padding:10px 6px; color:var(--muted);">${u.email}</td>
+      <td style="padding:10px 6px;">${u.is_admin ? 'Admin' : 'User'}</td>
+    </tr>`).join('');
+}
+
+async function loadRecipes() {
+  const res = await fetch(`${API_BASE}/api/admin/recipes`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return;
+  const foods = await res.json();
+  document.getElementById('recipesTableBody').innerHTML = foods.map(f => `
+    <tr style="border-bottom:1px solid var(--sage-200);">
+      <td style="padding:10px 6px;">${f.name}</td>
+      <td style="padding:10px 6px; color:var(--muted);">${f.category}</td>
+      <td style="padding:10px 6px; color:var(--muted);">${f.tags || ''}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('usersTabLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('usersPanel').style.display = 'block';
+  document.getElementById('recipesPanel').style.display = 'none';
+  loadUsers();
+});
+document.getElementById('recipesTabLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('recipesPanel').style.display = 'block';
+  document.getElementById('usersPanel').style.display = 'none';
+  loadRecipes();
+});
+document.getElementById('logoutLink').addEventListener('click', () => localStorage.clear());
+
+loadStats();
+</script>
+</body>
+</html>

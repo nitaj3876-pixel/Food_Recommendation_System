@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Favorites · Foodie</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="js/foodie-common.js"></script>
+</head>
+<body class="page-shell">
+
+  <nav class="navbar">
+    <div class="brand"><span class="emoji">🍔</span> Foodie</div>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="favorites.html" class="active">Favorites</a>
+      <a href="history.html">History</a>
+      <a href="profile.html">Profile</a>
+    </div>
+    <div class="nav-avatar" id="avatarInitial">U</div>
+  </nav>
+
+  <div class="page-body">
+    <div class="container">
+
+      <!-- Onboarding: select favorite foods (shown right after registering) -->
+      <section id="onboardingSection" style="display:none;">
+        <h1 class="page-title">Select Your Favorite Foods</h1>
+        <p class="page-sub">Choose the foods you love so we can recommend better options for you</p>
+        <div class="tile-grid" id="tileGrid"></div>
+        <button class="btn btn-primary" id="savePrefsBtn">Save Preferences</button>
+      </section>
+
+      <!-- My saved favorites -->
+      <section id="favoritesSection">
+        <h1 class="page-title">My Favorites</h1>
+        <p class="page-sub">Your saved favorite recipes</p>
+        <div class="food-grid" id="favoritesGrid"></div>
+      </section>
+
+    </div>
+  </div>
+
+<script>
+const token = localStorage.getItem('foodie_token');
+if (!token) window.location.href = 'login.html';
+
+const user = JSON.parse(localStorage.getItem('foodie_user') || '{}');
+if (user.full_name) document.getElementById('avatarInitial').textContent = user.full_name.charAt(0).toUpperCase();
+
+const params = new URLSearchParams(window.location.search);
+const isOnboarding = params.get('onboarding') === '1';
+
+let selectedTags = new Set();
+
+function tileHtml(food) {
+  return `
+    <div class="select-tile" data-id="${food.id}" data-tag="${food.category}">
+      <div class="thumb-wrap">
+        ${foodThumbHtml(food)}
+        <div class="check">✓</div>
+      </div>
+      <div class="label">${food.name}</div>
+    </div>`;
+}
+
+async function loadOnboarding() {
+  document.getElementById('onboardingSection').style.display = 'block';
+  document.getElementById('favoritesSection').style.display = 'none';
+
+  const res = await fetch(`${API_BASE}/api/foods`);
+  const foods = await res.json();
+  const grid = document.getElementById('tileGrid');
+  grid.innerHTML = foods.map(tileHtml).join('');
+
+  grid.querySelectorAll('.select-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      tile.classList.toggle('selected');
+      const tag = tile.dataset.tag;
+      if (tile.classList.contains('selected')) selectedTags.add(tag);
+      else selectedTags.delete(tag);
+    });
+  });
+}
+
+document.getElementById('savePrefsBtn').addEventListener('click', async () => {
+  await fetch(`${API_BASE}/api/users/preferences`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ tags: Array.from(selectedTags) })
+  });
+  window.location.href = 'home.html';
+});
+
+function favoriteCardHtml(fav) {
+  const food = fav.food;
+  return `
+    <a class="food-card" href="${relatedUrl(food)}">
+      ${foodThumbHtml(food, "thumb")}
+      <button class="heart-btn active" data-id="${food.id}" onclick="event.preventDefault(); event.stopPropagation(); removeFavorite(${food.id});">❤</button>
+      <div class="body">
+        <div class="name">${food.name}</div>
+        <div class="tag">${food.category}</div>
+      </div>
+    </a>`;
+}
+
+async function removeFavorite(foodId) {
+  await fetch(`${API_BASE}/api/users/favorites/${foodId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  loadFavorites();
+}
+
+async function loadFavorites() {
+  const grid = document.getElementById('favoritesGrid');
+  const res = await fetch(`${API_BASE}/api/users/favorites`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+  const favs = await res.json();
+
+  grid.innerHTML = favs.length
+    ? favs.map(favoriteCardHtml).join('')
+    : `<div class="empty-state"><h3>No favorites yet</h3><p>Tap the heart on any food to save it here.</p></div>`;
+}
+
+if (isOnboarding) {
+  loadOnboarding();
+} else {
+  loadFavorites();
+}
+</script>
+</body>
+</html>

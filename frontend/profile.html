@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile · Foodie</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="js/foodie-common.js"></script>
+</head>
+<body class="page-shell">
+
+  <nav class="navbar">
+    <div class="brand"><span class="emoji">🍔</span> Foodie</div>
+    <div class="nav-links">
+      <a href="home.html">Home</a>
+      <a href="favorites.html">Favorites</a>
+      <a href="history.html">History</a>
+      <a href="profile.html" class="active">Profile</a>
+    </div>
+    <div class="nav-avatar" id="avatarInitial">U</div>
+  </nav>
+
+  <div class="page-body">
+    <div class="container" style="max-width: 520px;">
+      <h1 class="page-title">My Profile</h1>
+      <p class="page-sub">Your account details</p>
+
+      <div class="panel" style="display:flex; align-items:center; gap:16px; margin-bottom:20px;">
+        <div class="nav-avatar" style="width:56px; height:56px; font-size:22px;" id="bigAvatarInitial">U</div>
+        <div>
+          <div style="font-weight:600; font-size:17px;" id="profileName">—</div>
+          <div style="color:var(--muted); font-size:14px;" id="profileEmail">—</div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline btn-block" id="logoutBtn">🚪 Logout</button>
+    </div>
+  </div>
+
+<script>
+const token = localStorage.getItem('foodie_token');
+if (!token) window.location.href = 'login.html';
+
+const user = JSON.parse(localStorage.getItem('foodie_user') || '{}');
+if (user.full_name) {
+  document.getElementById('avatarInitial').textContent = user.full_name.charAt(0).toUpperCase();
+  document.getElementById('bigAvatarInitial').textContent = user.full_name.charAt(0).toUpperCase();
+  document.getElementById('profileName').textContent = user.full_name;
+}
+if (user.email) {
+  document.getElementById('profileEmail').textContent = user.email;
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  localStorage.clear();
+  window.location.href = 'login.html';
+});
+</script>
+</body>
+</html>

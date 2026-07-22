@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login · Foodie</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="js/foodie-common.js"></script>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-panel form-side">
+      <div class="auth-card">
+        <div class="brand"><span class="emoji">🍔</span> Foodie</div>
+        <h1>Welcome Back</h1>
+        <p class="sub">Login to continue</p>
+
+        <div id="formMsg" class="form-msg"></div>
+
+        <form id="loginForm">
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Enter your email" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+
+        <div class="auth-switch">
+          Don't have an account? <a class="helper-link" href="register.html">Register</a>
+        </div>
+      </div>
+    </div>
+    <div class="auth-panel art-side">
+      <div style="width:340px; height:340px; border-radius:50%; border:8px solid rgba(255,255,255,.15); background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; font-size:110px;">🥗</div>
+      <div class="tagline">Discover. Select. Enjoy.</div>
+    </div>
+  </div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById('formMsg');
+  msg.style.display = 'none';
+
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/users/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.textContent = data.detail || 'Login failed. Please try again.';
+      msg.className = 'form-msg error';
+      msg.style.display = 'block';
+      return;
+    }
+
+    localStorage.setItem('foodie_token', data.access_token);
+    localStorage.setItem('foodie_user', JSON.stringify(data.user));
+    window.location.href = 'home.html';
+  } catch (err) {
+    msg.textContent = 'Could not reach the server. Is the backend running?';
+    msg.className = 'form-msg error';
+    msg.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>

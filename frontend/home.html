@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home · Foodie</title>
+<link rel="stylesheet" href="../css/style.css">
+<script src="js/foodie-common.js"></script>
+</head>
+<body class="page-shell">
+
+  <nav class="navbar">
+    <div class="brand"><span class="emoji">🍔</span> Foodie</div>
+    <div class="nav-links">
+      <a href="home.html" class="active">Home</a>
+      <a href="favorites.html">Favorites</a>
+      <a href="history.html">History</a>
+      <a href="profile.html">Profile</a>
+    </div>
+    <div class="nav-avatar" id="avatarInitial">U</div>
+  </nav>
+
+  <div class="page-body">
+    <div class="container">
+      <section class="hero">
+        <div class="hero-text">
+          <h1>Discover Food<br>That Fits You</h1>
+          <p>Get personalized food recommendations based on your taste and preferences.</p>
+          <form class="search-bar" id="searchForm">
+            <input type="text" id="searchInput" placeholder="Search for recipes...">
+            <button type="submit">🔍</button>
+          </form>
+        </div>
+        <div class="hero-image">
+          <div style="aspect-ratio:1/1; border-radius:var(--radius-lg); box-shadow:var(--shadow); background:linear-gradient(160deg, var(--sage-100), var(--sage-200)); display:flex; align-items:center; justify-content:center; font-size:120px;">🥗🍕🍜</div>
+        </div>
+      </section>
+
+      <div class="section-header">
+        <h2>Recommended For You</h2>
+        <a class="view-all" href="recommend.html">View All</a>
+      </div>
+      <div class="food-grid" id="recommendedGrid">
+        <!-- cards injected by JS -->
+      </div>
+    </div>
+  </div>
+
+<script>
+const token = localStorage.getItem('foodie_token');
+if (!token) window.location.href = 'login.html';
+
+const user = JSON.parse(localStorage.getItem('foodie_user') || '{}');
+if (user.full_name) {
+  document.getElementById('avatarInitial').textContent = user.full_name.charAt(0).toUpperCase();
+}
+
+function foodCardHtml(food) {
+  return `
+    <a class="food-card" href="${relatedUrl(food)}">
+      ${foodThumbHtml(food, "thumb")}
+      <div class="body">
+        <div class="name">${food.name}</div>
+        <div class="tag">${food.category}</div>
+      </div>
+    </a>`;
+}
+
+async function loadRecommended() {
+  const grid = document.getElementById('recommendedGrid');
+  try {
+    const res = await fetch(`${API_BASE}/api/foods/recommend/for-me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.status === 401) { localStorage.clear(); window.location.href = 'login.html'; return; }
+    const foods = await res.json();
+    grid.innerHTML = foods.length
+      ? foods.slice(0, 4).map(foodCardHtml).join('')
+      : `<div class="empty-state"><h3>No recommendations yet</h3><p>Pick some favorites to get started.</p></div>`;
+  } catch (err) {
+    grid.innerHTML = `<div class="empty-state"><h3>Couldn't load recommendations</h3><p>Check that the backend server is running.</p></div>`;
+  }
+}
+
+document.getElementById('searchForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = document.getElementById('searchInput').value.trim();
+  window.location.href = `recommend.html?search=${encodeURIComponent(q)}`;
+});
+
+loadRecommended();
+</script>
+</body>
+</html>
