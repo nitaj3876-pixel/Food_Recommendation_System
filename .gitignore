@@ -1,0 +1,24 @@
+# Virtual environments
+venv/
+.venv/
+..venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Python build
+Lib/
+Include/
+Scripts/
+pyvenv.cfg
