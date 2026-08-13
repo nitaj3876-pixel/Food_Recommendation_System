@@ -22,3 +22,12 @@ Lib/
 Include/
 Scripts/
 pyvenv.cfg
+
+venv/
+.venv/
+..venv/
+.venvv/
+backend/venv/
+__pycache__/
+*.pyc
+.env
